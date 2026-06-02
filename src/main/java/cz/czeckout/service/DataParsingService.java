@@ -8,7 +8,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
@@ -17,6 +19,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import cz.czeckout.entity.Account;
 import cz.czeckout.entity.Address;
 import cz.czeckout.entity.Invoice;
+import cz.czeckout.entity.Item;
 import cz.czeckout.entity.Metadata;
 import cz.czeckout.entity.Method;
 import cz.czeckout.entity.Party;
@@ -217,6 +220,23 @@ public class DataParsingService {
                 }
             }
         }
+
+        // Post-processing.
+        invoices.forEach(invoice -> {
+            // Align units if null/empty.
+            final var defaultItemUnitLength = invoice.getItems().stream()
+                .map(Item::getUnit)
+                .filter(Objects::nonNull)
+                .mapToInt(String::length)
+                .max()
+                .orElse(0);
+            final var defaultItemUnit = "\u00A0".repeat(defaultItemUnitLength);
+            invoice.getItems().forEach(item -> {
+                if (StringUtils.isBlank(item.getUnit())) {
+                    item.setUnit(defaultItemUnit);
+                }
+            });
+        });
 
         return invoices;
     }
